@@ -32,8 +32,8 @@ export class Transcribe {
           confidence: event.confidence,
           failoverCount: event.failoverCount,
           scoresRunId: event.scoresRunId,
-          // Dropping `warnings` made a cut transcript read as complete
-          // (Sentry SERVER-24): the key is copied only when the server sent one.
+          // Dropping `warnings` made a cut transcript read as complete; the
+          // key is copied only when the server sent one.
           ...(Array.isArray(event.warnings) && event.warnings.length > 0
             ? { warnings: event.warnings }
             : {}),

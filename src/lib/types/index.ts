@@ -170,6 +170,8 @@ export interface TranscribeWarning {
   model?: string;
   param?: string;
   reason?: string;
+  /** A readable sentence the server attaches to some kinds, such as `param_dropped`. */
+  message?: string;
 }
 
 export interface TranscribeResult {
