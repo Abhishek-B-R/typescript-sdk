@@ -151,6 +151,27 @@ export interface TranscribeOptions extends RoutingIntent {
   sttOptions?: { language?: string };
 }
 
+/**
+ * A non-fatal condition the server attached to a completed transcript.
+ *
+ * Kinds today: `words_truncated` (the word list was cut to its cap),
+ * `param_dropped` (a provider option was not forwarded; `provider`, `model`,
+ * `param` and `reason` say which and why) and `transcript_truncated` (the
+ * provider returned real text but stopped before the end of the audio, so
+ * speech after the cut is missing). The server sends `transcript_truncated`
+ * on every request where it applies; the other kinds ride only responses to
+ * requests that used provider-param fields in `sttOptions`, because legacy
+ * responses stay byte-for-byte unchanged. `kind` stays an open string so a
+ * kind added by a newer server still type-checks here.
+ */
+export interface TranscribeWarning {
+  kind: string;
+  provider?: string;
+  model?: string;
+  param?: string;
+  reason?: string;
+}
+
 export interface TranscribeResult {
   text: string;
   provider: string;
@@ -158,6 +179,11 @@ export interface TranscribeResult {
   confidence: number | null;
   failoverCount: number;
   scoresRunId: string | null;
+  /**
+   * Present only when the server attached at least one warning. Check for
+   * `transcript_truncated` before treating `text` as the whole recording.
+   */
+  warnings?: TranscribeWarning[];
 }
 
 export type TranscribeStreamEvent =
