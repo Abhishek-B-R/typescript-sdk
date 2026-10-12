@@ -676,6 +676,8 @@ export interface VoiceDialParams {
     };
     turnDetection?: boolean | 'stt';
     contextThreshold?: boolean;
+    /** Graph agents: judge that a scripted question was heard when it fully played before the caller's first word ('content'), or by the original audio-timing rules ('timing', default). */
+    heardBy?: 'content' | 'timing';
     /** Opt OUT of the keypad. Unset builds send_dtmf for every agent and leaves arming to the profile and the transport verdict; false never builds it. */
     keypad?: boolean;
     greetFirst?: boolean;
@@ -1562,6 +1564,7 @@ export interface AgentTurnHandling {
   };
   turnDetection?: boolean | 'stt';
   contextThreshold?: boolean;
+  heardBy?: 'content' | 'timing';
   textGate?: boolean;
   turnDetector?: 'smart_turn' | 'speko_turn_v1';
   dtmfToolDescription?: string;
