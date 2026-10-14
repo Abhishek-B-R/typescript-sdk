@@ -929,6 +929,12 @@ export interface AvailablePhoneNumber {
     locality: string | null;
     rateCenter: string | null;
   };
+  /**
+   * `true` for a number Speko already holds activated. Warm numbers are
+   * listed first and can place calls the moment they are bought; others may
+   * need up to a minute before their first outbound call connects.
+   */
+  warm?: boolean;
 }
 
 export interface PhoneNumberSearchParams {
