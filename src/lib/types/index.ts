@@ -721,8 +721,10 @@ export interface VoiceDialParams {
   /** Free-form metadata round-tripped to your webhooks. */
   metadata?: Record<string, unknown>;
   /**
-   * @deprecated The agent-initiated end_call tool is now always on; the server
-   * accepts this field for compat but ignores it.
+   * @deprecated The agent-initiated end_call tool is always on. The server
+   * accepts `{ enabled: true }` for compat and ignores it; `{ enabled: false }`
+   * is rejected with a 400. To keep the agent from hanging up, say so in the
+   * system prompt.
    */
   endCall?: { enabled: boolean };
 }
