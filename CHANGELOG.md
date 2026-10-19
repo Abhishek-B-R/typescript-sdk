@@ -1,3 +1,13 @@
+## 0.5.5
+
+### Fixes
+
+- `timeout` no longer stops a long stream. Before this release, one timer covered the response headers and the full body. Thus `synthesizeStream()`, `synthesize()`, `transcribe()` and `complete()` failed with `AbortError` after 30 s, even while audio or events kept arriving. Now `timeout` limits the wait for the response headers and each wait for the next body chunk. This is the same behavior as the Python SDK. Time that your code holds a chunk does not count.
+
+### Behavior change
+
+- A stream that keeps sending data now runs until it ends. If you used `timeout` as a limit on the total duration of a stream, pass `signal: AbortSignal.timeout(ms)` as the abort signal instead.
+
 ## 0.5.4
 
 ### Features

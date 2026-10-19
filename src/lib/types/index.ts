@@ -15,7 +15,12 @@ export interface SpekoClientOptions {
   baseUrl?: string;
   /** Alias for {@link SpekoClientOptions.baseUrl}. If both are set, `baseUrl` wins. */
   baseURL?: string;
-  /** Request timeout in milliseconds. Defaults to 30000. */
+  /**
+   * Idle timeout in milliseconds. Defaults to 30000. It limits the wait for
+   * the response headers and each wait for the next chunk of a streamed body.
+   * It does not limit the total duration of a stream. For a total limit, pass
+   * `AbortSignal.timeout(ms)` as the abort signal.
+   */
   timeout?: number;
 }
 

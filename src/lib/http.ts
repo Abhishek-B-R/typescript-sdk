@@ -6,7 +6,17 @@ export interface HttpClientOptions {
   timeout: number;
 }
 
-export const USER_AGENT = '@spekoai/sdk/0.5.4';
+interface RequestSignal {
+  signal: AbortSignal;
+  /** Restart the timeout window. */
+  arm: () => void;
+  /** Stop the timer until the next `arm()`. */
+  disarm: () => void;
+  /** Stop the timer and detach from the external signal. */
+  cleanup: () => void;
+}
+
+export const USER_AGENT = '@spekoai/sdk/0.5.5';
 
 export class HttpClient {
   private readonly baseUrl: string;
@@ -162,14 +172,13 @@ export class HttpClient {
     externalSignal?: AbortSignal,
     extraHeaders?: Record<string, string>,
     /**
-     * Per-request override of the client timeout. Long-lived SSE responses
-     * (session observation) outlive the default 30 s, which would abort them
-     * mid-stream.
+     * Per-request override of the client timeout. Session observation can go
+     * quiet for longer than the default 30 s between events.
      */
     timeoutMs?: number,
   ): AsyncIterableIterator<{ event: string; id?: string; data: unknown }> {
     const url = `${this.baseUrl}${path}`;
-    const { signal, cleanup } = this.buildSignal(externalSignal, timeoutMs);
+    const { signal, arm, disarm, cleanup } = this.buildSignal(externalSignal, timeoutMs);
     let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
 
     try {
@@ -193,7 +202,9 @@ export class HttpClient {
       let buffer = '';
 
       while (true) {
+        arm();
         const { done, value } = await reader.read();
+        disarm();
         if (done) break;
         buffer += decoder.decode(value, { stream: true });
         const events = drainSseEvents(buffer);
@@ -222,7 +233,8 @@ export class HttpClient {
     externalSignal?: AbortSignal,
   ): Promise<AsyncIterableIterator<{ event: string; id?: string; data: unknown }>> {
     const url = `${this.baseUrl}${path}`;
-    const { signal, cleanup } = this.buildSignal(externalSignal);
+    const idle = this.buildSignal(externalSignal);
+    const { signal, cleanup } = idle;
 
     const response = await fetch(url, {
       method,
@@ -245,7 +257,7 @@ export class HttpClient {
       throw new SpekoApiError('Response body is empty', response.status, 'EMPTY_BODY');
     }
 
-    return this.readSseBody(response.body, cleanup);
+    return this.readSseBody(response.body, idle);
   }
 
   async requestBinaryStream(
@@ -256,7 +268,8 @@ export class HttpClient {
     extraHeaders?: Record<string, string>,
   ): Promise<{ chunks: AsyncIterableIterator<Uint8Array>; headers: Record<string, string> }> {
     const url = `${this.baseUrl}${path}`;
-    const { signal, cleanup } = this.buildSignal(externalSignal);
+    const idle = this.buildSignal(externalSignal);
+    const { signal, cleanup } = idle;
 
     const response = await fetch(url, {
       method,
@@ -282,13 +295,13 @@ export class HttpClient {
 
     return {
       headers,
-      chunks: this.readBinaryBody(response.body, cleanup),
+      chunks: this.readBinaryBody(response.body, idle),
     };
   }
 
   private async *readSseBody(
     body: ReadableStream<Uint8Array>,
-    cleanup: () => void,
+    { arm, disarm, cleanup }: RequestSignal,
   ): AsyncIterableIterator<{ event: string; id?: string; data: unknown }> {
     const reader = body.getReader();
     const decoder = new TextDecoder();
@@ -296,7 +309,9 @@ export class HttpClient {
 
     try {
       while (true) {
+        arm();
         const { done, value } = await reader.read();
+        disarm();
         if (done) break;
         buffer += decoder.decode(value, { stream: true });
         const events = drainSseEvents(buffer);
@@ -319,12 +334,14 @@ export class HttpClient {
 
   private async *readBinaryBody(
     body: ReadableStream<Uint8Array>,
-    cleanup: () => void,
+    { arm, disarm, cleanup }: RequestSignal,
   ): AsyncIterableIterator<Uint8Array> {
     const reader = body.getReader();
     try {
       while (true) {
+        arm();
         const { done, value } = await reader.read();
+        disarm();
         if (done) break;
         yield value;
       }
@@ -338,18 +355,29 @@ export class HttpClient {
    * Compose the internal timeout signal with an optional external signal so
    * that callers can cancel in-flight requests (e.g. LiveKit Agents tearing
    * down a session) while still enforcing the client's configured timeout.
+   *
+   * The timer starts armed and covers the wait for response headers. Buffered
+   * calls keep it running through the body read. Streaming readers re-arm it
+   * before each body read and disarm it while the consumer holds a chunk, so
+   * the timeout bounds the gap between chunks, not the stream length. This
+   * matches the per-read timeout of the Python SDK (httpx).
    */
-  private buildSignal(
-    externalSignal?: AbortSignal,
-    timeoutMs?: number,
-  ): {
-    signal: AbortSignal;
-    cleanup: () => void;
-  } {
+  private buildSignal(externalSignal?: AbortSignal, timeoutMs?: number): RequestSignal {
     const controller = new AbortController();
     const effectiveTimeout = timeoutMs ?? this.timeout;
-    const timer =
-      effectiveTimeout > 0 ? setTimeout(() => controller.abort(), effectiveTimeout) : null;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    const disarm = () => {
+      if (timer) clearTimeout(timer);
+      timer = null;
+    };
+    const arm = () => {
+      disarm();
+      if (effectiveTimeout > 0 && !controller.signal.aborted) {
+        timer = setTimeout(() => controller.abort(), effectiveTimeout);
+      }
+    };
+    arm();
 
     if (externalSignal) {
       if (externalSignal.aborted) {
@@ -359,20 +387,17 @@ export class HttpClient {
         externalSignal.addEventListener('abort', onAbort, { once: true });
         return {
           signal: controller.signal,
+          arm,
+          disarm,
           cleanup: () => {
-            if (timer) clearTimeout(timer);
+            disarm();
             externalSignal.removeEventListener('abort', onAbort);
           },
         };
       }
     }
 
-    return {
-      signal: controller.signal,
-      cleanup: () => {
-        if (timer) clearTimeout(timer);
-      },
-    };
+    return { signal: controller.signal, arm, disarm, cleanup: disarm };
   }
 
   private async handleError(response: Response): Promise<never> {
