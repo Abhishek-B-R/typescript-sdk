@@ -652,6 +652,14 @@ export interface VoiceDialParams {
   /** Server-side wall-clock cap in seconds. Values are clamped server-side to 30s-4h. */
   maxDurationSeconds?: number;
   /**
+   * How long the call rings before it ends as a no-answer, in whole seconds
+   * (20-45, default 45). Counted from when the callee's phone starts ringing,
+   * or from dial if the carrier never reports it. Overrides the agent's
+   * `ringTimeoutSeconds`. A value outside 20-45 is a 400
+   * `RING_TIMEOUT_OUT_OF_RANGE`.
+   */
+  ringTimeoutSeconds?: number;
+  /**
    * Optional per-call turn-taking overrides. `greetFirst` defaults ON for
    * outbound (worker-side, 2026-07-03): the greeting plays immediately while
    * AMD classifies in the background. Pass false to hold the greeting for the
