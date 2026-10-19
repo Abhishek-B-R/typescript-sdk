@@ -218,7 +218,7 @@ export interface SynthesizeOptions extends RoutingIntent {
   voice?: string;
   /**
    * Optional upstream model name to use for synthesis (e.g.
-   * `eleven_multilingual_v2`, `sonic-2`, `gpt-4o-mini-tts`,
+   * `eleven_multilingual_v2`, `sonic-3.6`, `gpt-4o-mini-tts`,
    * `qwen3-tts-flash`). When omitted, the router picks the best-ranked
    * model for the chosen provider. When set, applies to the primary
    * candidate only — failover candidates still use the selector's model
