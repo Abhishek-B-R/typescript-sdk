@@ -353,6 +353,8 @@ export const VOICE_ERROR_CODES = {
   unsupportedCommand: 'UNSUPPORTED_COMMAND',
   bridgeTargetInvalid: 'BRIDGE_TARGET_INVALID',
   noBrokerAvailable: 'NO_BROKER_AVAILABLE',
+  /** The number is in a sanctioned country or region; nothing was dialed. */
+  destinationNotAllowed: 'DESTINATION_NOT_ALLOWED',
 } as const;
 
 export type VoiceErrorCode = (typeof VOICE_ERROR_CODES)[keyof typeof VOICE_ERROR_CODES];
