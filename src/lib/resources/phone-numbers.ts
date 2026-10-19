@@ -55,8 +55,10 @@ export class PhoneNumbers {
    */
   searchAvailable(params: PhoneNumberSearchParams = {}): Promise<AvailablePhoneNumber[]> {
     const query = new URLSearchParams();
+    if (params.country) query.set('country', params.country);
     if (params.areaCode) query.set('areaCode', params.areaCode);
     if (params.locality) query.set('locality', params.locality);
+    if (params.state) query.set('state', params.state);
     if (params.limit !== undefined) query.set('limit', String(params.limit));
     const qs = query.toString();
     return this.http.get<AvailablePhoneNumber[]>(

@@ -948,8 +948,12 @@ export interface AvailablePhoneNumber {
 }
 
 export interface PhoneNumberSearchParams {
-  /** 3-digit US area code, e.g. "415". */
+  /** `US` or `CA`. Omitted: a Canadian area code searches Canada, anything else the US. */
+  country?: 'US' | 'CA';
+  /** 3-digit US or Canadian area code, e.g. "415" or "416". */
   areaCode?: string;
+  /** Two-letter US state (e.g. "TX"), or Canadian province (e.g. "ON") with `country: 'CA'`. */
+  state?: string;
   /** Optional locality filter, e.g. "San Francisco". */
   locality?: string;
   /** Max results. Default 10. */
