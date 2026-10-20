@@ -720,6 +720,13 @@ export interface VoiceDialParams {
      * sentence boundary where one exists.
      */
     voicemailMessage?: string;
+    /**
+     * How long, in whole seconds (60-7200), a phone menu or hold queue may keep
+     * the line with nobody on it saying anything conversational before the
+     * call ends. Defaults to 600 (10 minutes); overrides the agent's value for
+     * this call. Never extends the call past `maxDurationSeconds`.
+     */
+    holdTimeoutSeconds?: number;
   };
   /** Optional per-call SIP routing hints. Carrier AMD requires trunk/provider support. */
   telephony?: {
@@ -1611,6 +1618,14 @@ export interface AgentTurnHandling {
    * boundary where one exists.
    */
   voicemailMessage?: string;
+  /**
+   * How long, in whole seconds (60-7200), a phone menu or hold queue may keep
+   * the line with nobody on it saying anything conversational before the call
+   * ends. Defaults to 600 (10 minutes); raise it for calls that must wait out
+   * long holds. Never extends a call past `maxDurationSeconds`, which stays the
+   * hard cap.
+   */
+  holdTimeoutSeconds?: number;
 }
 
 export interface AgentRow {
