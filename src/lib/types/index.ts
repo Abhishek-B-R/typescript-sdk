@@ -2447,7 +2447,14 @@ export interface SmsMessage {
   readonly id: string;
   readonly conversation_id: string;
   readonly batch_id: string | null;
+  /** The workspace number of the conversation, for inbound and outbound messages alike. */
+  readonly phone_number_id: string;
   readonly from_phone_number_id: string;
+  /**
+   * The agent handling the conversation when the message was written. It never
+   * changes afterward. `null` when no agent handled it.
+   */
+  readonly agent_id: string | null;
   readonly direction: SmsMessageDirection;
   readonly origin: SmsMessageOrigin;
   readonly from: string;
@@ -2490,6 +2497,11 @@ export interface SmsSendParams {
   readonly consent_id?: string | null;
   readonly recipient_timezone?: string | null;
   readonly metadata?: Record<string, unknown>;
+  /**
+   * Sent from one agent's inbox: the write is refused with 409
+   * `SMS_THREAD_AGENT_CHANGED` unless this agent still handles the conversation.
+   */
+  readonly expected_agent_id?: string;
 }
 
 export interface SmsMessageListParams {
@@ -2498,6 +2510,8 @@ export interface SmsMessageListParams {
   readonly from_phone_number_id?: string;
   readonly recipient?: string;
   readonly campaign_id?: string;
+  /** Only messages written while this agent handled their conversation. */
+  readonly agent_id?: string;
   readonly status?: SmsMessageStatus;
   readonly direction?: SmsMessageDirection;
   readonly origin?: SmsMessageOrigin;
@@ -2554,7 +2568,13 @@ export interface SmsConversation {
   readonly status: 'open' | 'closed' | 'spam';
   readonly automation_status: 'disabled' | 'enabled' | 'paused';
   readonly assigned_user_id: string | null;
+  /**
+   * The agent handling the conversation: `agent_override_id` when set,
+   * otherwise the current agent of the conversation's phone number.
+   */
   readonly assigned_agent_id: string | null;
+  /** An agent pinned to this conversation. `null` follows the phone number's agent. */
+  readonly agent_override_id: string | null;
   readonly unread_count: number;
   readonly recipient_timezone: string | null;
   readonly last_inbound_at: string | null;
@@ -2569,7 +2589,16 @@ export interface SmsConversationListParams {
   readonly status?: SmsConversation['status'];
   readonly phone_number_id?: string;
   readonly assigned_user_id?: string;
+  /** Only conversations this agent handles now. */
   readonly assigned_agent_id?: string;
+  /**
+   * The agent's inbox: conversations it handles now, plus conversations
+   * holding a message written while it handled them.
+   */
+  readonly agent_id?: string;
+  readonly campaign_id?: string;
+  /** Only conversations whose last message is at or after this ISO 8601 time. */
+  readonly last_message_after?: string;
   readonly recipient?: string;
   readonly unread?: boolean;
   readonly cursor?: string;
@@ -2579,9 +2608,15 @@ export interface SmsConversationListParams {
 export interface SmsConversationUpdate {
   readonly status?: SmsConversation['status'];
   readonly assigned_user_id?: string | null;
+  /** Pins an agent to the conversation. `null` removes the pin. */
   readonly assigned_agent_id?: string | null;
   readonly automation_status?: SmsConversation['automation_status'];
   readonly recipient_timezone?: string | null;
+  /**
+   * Sent from one agent's inbox: the write is refused with 409
+   * `SMS_THREAD_AGENT_CHANGED` unless this agent still handles the conversation.
+   */
+  readonly expected_agent_id?: string;
 }
 
 export interface SmsConversationSendParams {
@@ -2591,6 +2626,11 @@ export interface SmsConversationSendParams {
   readonly consent_id?: string | null;
   readonly recipient_timezone?: string | null;
   readonly metadata?: Record<string, unknown>;
+  /**
+   * Sent from one agent's inbox: the write is refused with 409
+   * `SMS_THREAD_AGENT_CHANGED` unless this agent still handles the conversation.
+   */
+  readonly expected_agent_id?: string;
 }
 
 export type SmsConsentSource =
