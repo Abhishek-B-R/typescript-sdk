@@ -1418,6 +1418,7 @@ export type WorkspaceWebhookEventType =
   | 'sms.sent'
   | 'sms.delivered'
   | 'sms.delivery_failed'
+  | 'sms.delivery_unconfirmed'
   | 'sms.submission_unknown'
   | 'sms.opted_out'
   | 'sms.opted_in';
@@ -2427,6 +2428,7 @@ export type SmsMessageStatus =
   | 'sent'
   | 'delivered'
   | 'delivery_failed'
+  | 'delivery_unconfirmed'
   | 'rejected'
   | 'submission_unknown'
   | 'canceled'
