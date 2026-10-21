@@ -1770,6 +1770,12 @@ export interface CallReport {
   organization_id: string;
   summary: string;
   outcome: string;
+  /**
+   * Whether anybody reached anybody, from what was recorded on the line
+   * rather than the analysis: `outcome` can read `completed` on a call nobody
+   * spoke on. `null` while open; absent on reports from before the field.
+   */
+  contact?: 'connected' | 'no_answer' | 'not_connected' | 'no_response' | (string & {}) | null;
   structured_data: Record<string, unknown>;
   /**
    * Caller-defined extraction values, keyed by field name — the same object the
@@ -1855,6 +1861,8 @@ export interface FinalizeCallReportResult {
   session_id: string;
   summary: string;
   outcome: string;
+  /** Whether anybody reached anybody; see `CallReport.contact`. */
+  contact?: 'connected' | 'no_answer' | 'not_connected' | 'no_response' | (string & {}) | null;
   cost_micro_usd: string;
   /** @deprecated Aggregate retained through the current SDK major version. */
   webhook: unknown;
