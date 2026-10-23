@@ -2020,6 +2020,8 @@ export interface WarmTransferDestination {
   label?: string;
   outboundTrunkId?: string;
   screeningPrompt?: string;
+  /** `false` adds the recipient straight into the call on answer, with no screening agent. */
+  screening?: boolean;
   summary?: string;
   metadata?: Record<string, unknown>;
 }
@@ -2052,6 +2054,8 @@ export interface WarmTransferParams {
   participantIdentity?: string;
   outboundTrunkId?: string;
   screeningPrompt?: string;
+  /** `false` adds the recipient straight into the call on answer, with no screening agent. */
+  screening?: boolean;
   summary?: string;
   ringingTimeout?: number;
   waitUntilAnswered?: boolean;
