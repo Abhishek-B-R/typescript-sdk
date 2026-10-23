@@ -276,6 +276,12 @@ export interface VoiceCatalogEntry {
   id: string;
   /** Human-readable label. */
   name: string;
+  /**
+   * The vendor's models whose voice list includes this voice. Present only
+   * where a vendor's models list different voices (Paxa); absent means every
+   * model of the vendor speaks it.
+   */
+  models?: readonly string[];
 }
 
 export interface VoicesProviderEntry {
@@ -735,6 +741,13 @@ export interface VoiceDialParams {
       mode?: 'agent' | 'carrier' | 'disabled';
       timeoutSeconds?: number;
     };
+    /**
+     * Keys pressed after the far end answers, before the agent's first turn:
+     * a phone-menu path you already know, such as `'ww1w8'`. Digits 0-9, `*`
+     * and `#`, with `w` or `,` for a half-second pause, up to 64 characters.
+     * Overrides the agent's saved `outboundDtmf`; `''` presses nothing.
+     */
+    dtmf?: string;
   };
   /** Exact-match attributes used only for workspace webhook routing. Requires agentId. */
   webhookTags?: Record<string, string>;
@@ -1653,6 +1666,8 @@ export interface AgentRow {
   extractionFields: AgentExtractionField[];
   /** Prompt-variable registry. Returned on single-agent reads; null = empty. */
   promptVariables?: AgentPromptVariable[] | null;
+  /** Keys outbound calls press after answer, before the agent's first turn. */
+  outboundDtmf?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -1679,10 +1694,17 @@ export interface AgentCreateParams {
   extractionFields?: AgentExtractionField[];
   /** Declare the prompt's `{{variables}}` with per-agent defaults/descriptions. */
   promptVariables?: AgentPromptVariable[];
+  /**
+   * Keys every outbound call this agent places presses after the far end
+   * answers, before its first turn: a phone-menu path you already know, such
+   * as `'8w2'`. Digits 0-9, `*` and `#`, with `w` or `,` for a half-second
+   * pause. A per-call `telephony.dtmf` on `voice.dial()` wins.
+   */
+  outboundDtmf?: string;
 }
 
 export type AgentUpdateParams = Partial<
-  Omit<AgentCreateParams, 'webhooks' | 'turnHandling' | 'audioOutput'>
+  Omit<AgentCreateParams, 'webhooks' | 'turnHandling' | 'audioOutput' | 'outboundDtmf'>
 > & {
   /** Set to null to clear all stored turn-taking overrides. */
   turnHandling?: AgentTurnHandling | null;
@@ -1697,6 +1719,8 @@ export type AgentUpdateParams = Partial<
    */
   /** `null` clears the schema. */
   extractionFields?: AgentExtractionField[] | null;
+  /** `null` stops pressing keys on answer. */
+  outboundDtmf?: string | null;
 };
 
 // ─── Calls ───────────────────────────────────────────────────────────
