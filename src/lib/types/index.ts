@@ -866,6 +866,12 @@ export interface PhoneNumberRow {
   direction: PhoneNumberDirection;
   dispatchMetadataTemplate: Record<string, unknown> | null;
   label: string | null;
+  /** Outbound caller name (CNAM) listed for this number; null when none. */
+  callerName?: string | null;
+  /** When `callerName` last changed; carriers pick up a new name within about 72 hours. */
+  callerNameUpdatedAt?: string | null;
+  /** Whether a caller name can be set: US local numbers bought through Speko. */
+  callerNameSupported?: boolean;
   sms10dlcProfileId: string | null;
   smsCampaignId: string | null;
   smsAssignmentStatus: PhoneNumberSmsAssignmentStatus | null;
@@ -951,6 +957,12 @@ export interface PhoneNumberUpdateParams {
   routeToBrokerId?: string | null;
   /** Owner/admin-only opt-in for inbound SMS agent replies on this number. */
   smsAutomationEnabled?: boolean;
+  /**
+   * Owner/admin-only. Outbound caller name (CNAM) for a US local number bought
+   * through Speko: letters, digits and spaces, at most 15 characters. `null` or
+   * an empty string removes it. Carriers pick it up within about 72 hours.
+   */
+  callerName?: string | null;
 }
 
 export interface AvailablePhoneNumber {
