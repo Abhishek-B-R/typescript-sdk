@@ -699,6 +699,10 @@ export interface VoiceDialParams {
     heardBy?: 'content' | 'timing';
     /** Opt OUT of the keypad. Unset builds send_dtmf for every agent and leaves arming to the profile and the transport verdict; false never builds it. */
     keypad?: boolean;
+    /** The only keys the keypad tool may press, from 0-9, `*` and `#`. Omit for every key. */
+    keypadAllowedKeys?: Array<
+      '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '*' | '#'
+    >;
     /** Record the keys the callee presses on this call; see {@link AgentTurnHandling.recordCallerKeypad}. */
     recordCallerKeypad?: boolean;
     greetFirst?: boolean;
@@ -713,13 +717,14 @@ export interface VoiceDialParams {
      * for the greeting to finish, speaks `voicemailMessage` once, then hangs
      * up; `agent_decides` (default) hands the verdict to the LLM and lets the
      * prompt's own voicemail rules act. Unavailable mailboxes always end without
-     * a message. Does not apply to menus/screeners or enable disabled/carrier AMD.
+     * a message. `continue` ignores the verdict and carries on as a normal call.
+     * Does not apply to menus/screeners or enable disabled/carrier AMD.
      * On a Realtime (`runMode: 's2s'`) call it applies to GPT-Live only, once
      * worker detection is enabled for the workspace (until then verdicts are
      * only recorded), and `leave_message` is spoken in the voice model's own
      * words; Gemini Live runs no worker detection.
      */
-    onMachine?: 'hangup' | 'leave_message' | 'agent_decides';
+    onMachine?: 'hangup' | 'leave_message' | 'agent_decides' | 'continue';
     /**
      * Spoken once into the mailbox under `onMachine: 'leave_message'`. Renders the same `{{variables}}` as `firstMessage`. Max 2,000 characters.
      * On a Realtime (GPT-Live) call the voice model says it in its own words,
@@ -735,6 +740,12 @@ export interface VoiceDialParams {
      * this call. Never extends the call past `maxDurationSeconds`.
      */
     holdTimeoutSeconds?: number;
+    /**
+     * How long, in whole seconds (30-600), the call may stay on a voicemail
+     * greeting, or on a call screener that never puts a person through, before it
+     * ends. Defaults to 120. Phone menus and hold queues use `holdTimeoutSeconds`.
+     */
+    machineBudgetSeconds?: number;
   };
   /** Optional per-call SIP routing hints. Carrier AMD requires trunk/provider support. */
   telephony?: {
@@ -1625,6 +1636,10 @@ export interface AgentTurnHandling {
   turnDetection?: boolean | 'stt';
   contextThreshold?: boolean;
   heardBy?: 'content' | 'timing';
+  /** Opt OUT of the keypad tool. Unset builds it for every phone agent; false never builds it. */
+  keypad?: boolean;
+  /** The only keys the keypad tool may press, from 0-9, `*` and `#`. Omit for every key. */
+  keypadAllowedKeys?: Array<'0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '*' | '#'>;
   textGate?: boolean;
   /**
    * Record the keys the caller presses in the session's `dtmf` facts and the
@@ -1643,7 +1658,7 @@ export interface AgentTurnHandling {
    * to GPT-Live only, once worker detection is enabled for the workspace, and
    * `leave_message` is spoken in the voice model's own words.
    */
-  onMachine?: 'hangup' | 'leave_message' | 'agent_decides';
+  onMachine?: 'hangup' | 'leave_message' | 'agent_decides' | 'continue';
   /**
    * Spoken once into the mailbox under `onMachine: 'leave_message'`. On a
    * Realtime (GPT-Live) call the voice model says it in its own words, after
@@ -1660,6 +1675,12 @@ export interface AgentTurnHandling {
    * hard cap.
    */
   holdTimeoutSeconds?: number;
+  /**
+   * How long, in whole seconds (30-600), the call may stay on a voicemail
+   * greeting, or on a call screener that never puts a person through, before it
+   * ends. Defaults to 120. Phone menus and hold queues use `holdTimeoutSeconds`.
+   */
+  machineBudgetSeconds?: number;
 }
 
 export interface AgentRow {
@@ -1688,6 +1709,8 @@ export interface AgentRow {
   promptVariables?: AgentPromptVariable[] | null;
   /** Keys outbound calls press after answer, before the agent's first turn. */
   outboundDtmf?: string | null;
+  /** Hard cap on each phone call in seconds, used when the call names none. `null` = 3600. */
+  maxDurationSeconds?: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -1721,10 +1744,18 @@ export interface AgentCreateParams {
    * pause. A per-call `telephony.dtmf` on `voice.dial()` wins.
    */
   outboundDtmf?: string;
+  /**
+   * Hard cap on each of this agent's phone calls, in whole seconds (30-14400).
+   * Omit for 3600. A per-call `maxDurationSeconds` on `voice.dial()` wins.
+   */
+  maxDurationSeconds?: number;
 }
 
 export type AgentUpdateParams = Partial<
-  Omit<AgentCreateParams, 'webhooks' | 'turnHandling' | 'audioOutput' | 'outboundDtmf'>
+  Omit<
+    AgentCreateParams,
+    'webhooks' | 'turnHandling' | 'audioOutput' | 'outboundDtmf' | 'maxDurationSeconds'
+  >
 > & {
   /** Set to null to clear all stored turn-taking overrides. */
   turnHandling?: AgentTurnHandling | null;
@@ -1741,6 +1772,8 @@ export type AgentUpdateParams = Partial<
   extractionFields?: AgentExtractionField[] | null;
   /** `null` stops pressing keys on answer. */
   outboundDtmf?: string | null;
+  /** `null` restores the 3600-second default. */
+  maxDurationSeconds?: number | null;
 };
 
 // ─── Calls ───────────────────────────────────────────────────────────
