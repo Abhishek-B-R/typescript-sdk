@@ -699,6 +699,8 @@ export interface VoiceDialParams {
     heardBy?: 'content' | 'timing';
     /** Opt OUT of the keypad. Unset builds send_dtmf for every agent and leaves arming to the profile and the transport verdict; false never builds it. */
     keypad?: boolean;
+    /** Record the keys the callee presses on this call; see {@link AgentTurnHandling.recordCallerKeypad}. */
+    recordCallerKeypad?: boolean;
     greetFirst?: boolean;
     /**
      * Replaces the built-in prompt the answering-machine detector's classifier
@@ -1624,6 +1626,12 @@ export interface AgentTurnHandling {
   contextThreshold?: boolean;
   heardBy?: 'content' | 'timing';
   textGate?: boolean;
+  /**
+   * Record the keys the caller presses in the session's `dtmf` facts and the
+   * `call.report` webhook. Off unless `true`, because callers type PINs and
+   * card numbers. Keys the agent presses with `send_dtmf` are always recorded.
+   */
+  recordCallerKeypad?: boolean;
   turnDetector?: 'smart_turn' | 'speko_turn_v1';
   dtmfToolDescription?: string;
   amdPrompt?: string;
