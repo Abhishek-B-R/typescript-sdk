@@ -517,6 +517,13 @@ export interface RealtimeConnectParams {
    * on `POST /v1/sessions` and join with `VoiceConversation` instead.
    */
   thinkingLevel?: 'low' | 'medium' | 'high';
+  /**
+   * xAI Grok Voice 3.0 only: `session.reasoning.effort`. xAI accepts `high`
+   * (its default: the model reasons before every reply) and `none` (answers
+   * sooner). Every other model rejects the field. Absent falls back to the
+   * agent's `llmOptions.reasoningEffort`, then xAI's default.
+   */
+  reasoningEffort?: 'none' | 'high';
   /** Exact-match attributes used only for workspace webhook routing. Requires agentId. */
   webhookTags?: Record<string, string>;
   metadata?: Record<string, unknown>;
@@ -1148,6 +1155,12 @@ export interface AgentLlmOptions {
   temperature?: number;
   maxTokens?: number;
   model?: string;
+  /**
+   * Speech-to-speech reasoning effort. Only xAI Grok Voice 3.0 takes one
+   * today: `high` (xAI's default) reasons before every reply, `none` answers
+   * sooner. Calls on any other model ignore it.
+   */
+  reasoningEffort?: 'none' | 'high';
 }
 
 export interface AgentStackPreferences {

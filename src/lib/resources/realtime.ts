@@ -56,6 +56,8 @@ interface SessionCreateResponse {
      * closes it with one.
      */
     thinkingLevel?: 'low' | 'medium' | 'high';
+    /** Grok Voice 3.0 only: `session.reasoning.effort`, as the server resolved it. */
+    reasoningEffort?: 'none' | 'high';
   };
   inputSampleRate: 16000 | 24000;
   outputSampleRate: 24000;
@@ -87,6 +89,7 @@ export class Realtime {
           outputSampleRate: params.outputSampleRate,
           tools: params.tools,
           thinkingLevel: params.thinkingLevel,
+          reasoningEffort: params.reasoningEffort,
         },
         webhookTags: params.webhookTags,
         metadata: params.metadata,
@@ -992,6 +995,9 @@ function xAISessionUpdate(response: SessionCreateResponse): Record<string, unkno
   if (response.session.voice !== undefined) session['voice'] = response.session.voice;
   if (response.session.instructions !== undefined) {
     session['instructions'] = response.session.instructions;
+  }
+  if (response.session.reasoningEffort !== undefined) {
+    session['reasoning'] = { effort: response.session.reasoningEffort };
   }
   if (response.session.tools) {
     session['tools'] = response.session.tools.map((tool) => ({ type: 'function', ...tool }));
