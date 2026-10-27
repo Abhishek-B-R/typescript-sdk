@@ -518,12 +518,13 @@ export interface RealtimeConnectParams {
    */
   thinkingLevel?: 'low' | 'medium' | 'high';
   /**
-   * xAI Grok Voice 3.0 only: `session.reasoning.effort`. xAI accepts `high`
-   * (its default: the model reasons before every reply) and `none` (answers
-   * sooner). Every other model rejects the field. Absent falls back to the
-   * agent's `llmOptions.reasoningEffort`, then xAI's default.
+   * How much the model thinks before it speaks, on every speech-to-speech
+   * model with a dial: Grok Voice 3.0 (`none` / `high`), GPT-Live's backend
+   * model, and Gemini Live extended-thinking. Mapped to the nearest value the
+   * model takes; a model with no dial rejects the field. Absent falls back to
+   * the agent's `llmOptions.reasoningEffort`, then the model's default.
    */
-  reasoningEffort?: 'none' | 'high';
+  reasoningEffort?: 'none' | 'minimal' | 'low' | 'medium' | 'high' | 'xhigh';
   /** Exact-match attributes used only for workspace webhook routing. Requires agentId. */
   webhookTags?: Record<string, string>;
   metadata?: Record<string, unknown>;
@@ -664,7 +665,12 @@ export interface VoiceDialParams {
    * from, and for `{{system.now}}`. Omit to use the agent's.
    */
   timezone?: string;
-  llm?: { temperature?: number; maxTokens?: number };
+  llm?: {
+    temperature?: number;
+    maxTokens?: number;
+    /** See {@link AgentLlmOptions.reasoningEffort}. */
+    reasoningEffort?: 'none' | 'minimal' | 'low' | 'medium' | 'high' | 'xhigh';
+  };
   ttsOptions?: { sampleRate?: number; speed?: number };
   sttOptions?: { keywords?: string[]; prompt?: string; language?: string };
   /** Server-side wall-clock cap in seconds. Values are clamped server-side to 30s-4h. */
@@ -1156,11 +1162,13 @@ export interface AgentLlmOptions {
   maxTokens?: number;
   model?: string;
   /**
-   * Speech-to-speech reasoning effort. Only xAI Grok Voice 3.0 takes one
-   * today: `high` (xAI's default) reasons before every reply, `none` answers
-   * sooner. Calls on any other model ignore it.
+   * How much the agent's model thinks before it answers, for every reasoning
+   * model with a dial: cascade LLMs (Gemini 3.5+, OpenAI gpt-5 / -mini /
+   * -nano, Baseten) and speech-to-speech (Grok Voice 3.0, GPT-Live backend,
+   * Gemini Live extended-thinking). Each model takes the nearest value it
+   * supports; a model with no dial ignores it.
    */
-  reasoningEffort?: 'none' | 'high';
+  reasoningEffort?: 'none' | 'minimal' | 'low' | 'medium' | 'high' | 'xhigh';
 }
 
 export interface AgentStackPreferences {
